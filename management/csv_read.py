@@ -1,8 +1,9 @@
 import csv
+import io
 import re
 
-from openpyxl import load_workbook
-from datetime import datetime
+import pandas as pd
+
 from fastapi import HTTPException
 
 
@@ -24,41 +25,63 @@ def read_csv(file_route):
         return data_to_insert
 
 
-def read_xlsx(file):
-    excel_data = []
-    wb = load_workbook(file.file)
-    sheet = wb.active
-    for row in sheet.iter_rows(values_only=True):
-        if all(row):
-            excel_data.append(row)
-    formatted_data = convert_to_desired_format(excel_data)
-    return formatted_data
-
-
-def convert_to_desired_format(excel_data):
-    headers = excel_data[0]
-    data = []
-    for row in excel_data[1:]:
-        row_dict = {}
-        for i, header in enumerate(headers):
-            if header.lower() == "period":
-                try:
-                    value = row[i].date()
-                except AttributeError:
-                    value = row[i]
-                try:
-                    date_obj = datetime.strptime(str(value), "%Y-%m-%d")
-                except ValueError:
-                    raise HTTPException(
-                        status_code=404, detail=f"Invalid date format: {value}."
-                    )
-                if date_obj.day != 1:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"Invalid date: {value} is not the first day of the month",
-                    )
-                row_dict[header] = date_obj.strftime("%Y-%m-%d")
-            else:
-                row_dict[header] = row[i]
-        data.append(row_dict)
-    return data
+async def read_xlsx(file):
+    data = await file.read()
+    df = pd.read_excel(io.BytesIO(data), engine="openpyxl")
+    if df.empty:
+        raise HTTPException(status_code=400, detail="Error: no data in file")
+    missing_columns = [column for column in ("period", "sum", "category_plan") if column not in df.columns]
+    if missing_columns:
+        missing_columns_str = ", ".join(missing_columns)
+        raise HTTPException(
+            status_code=400, detail=f"Error: no '{missing_columns_str}' column"
+        )
+    if not df["period"].notna().all():
+        raise HTTPException(
+            status_code=400, detail="Error: column 'period' must not be empty"
+        )
+    if not df["period"].dtype == "datetime64[ns]":
+        raise HTTPException(
+            status_code=400, detail="Error: column 'period' must be all date type"
+        )
+    df["period_valid"] = pd.to_datetime(df["period"], errors="coerce")
+    df["day_of_month"] = df["period_valid"].dt.day
+    if (df["day_of_month"] != 1).any():
+        raise HTTPException(status_code=400, detail="Error: day of month must be 1")
+    df = df.drop(columns=["period_valid", "day_of_month"])
+    valid_categories = ["видача", "збір"]
+    if not df["category_plan"].isin(valid_categories).all():
+        raise HTTPException(
+            status_code=400,
+            detail="Error: not all categories are valid, must be 'видача' or 'збір'",
+        )
+    if df.duplicated(subset=["category_plan", "period"]).any():
+        raise HTTPException(
+            status_code=400,
+            detail="Error: duplicated data of 'category_plan' and 'period'",
+        )
+    for date in df["period"].unique():
+        if (
+            "видача" in df[(df["period"] == date)]["category_plan"].values
+            and "збір" not in df[(df["period"] == date)]["category_plan"].values
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Error: for date '{date.date()}' must be category 'видача' and 'збір'",
+            )
+        if (
+            "збір" in df[(df["period"] == date)]["category_plan"].values
+            and "видача" not in df[(df["period"] == date)]["category_plan"].values
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Error: for date '{date.date()}' must be category 'видача' and 'збір'",
+            )
+    if not df["sum"].notna().all() or not (df["sum"] >= 0).all():
+        raise HTTPException(
+            status_code=400, detail="Error: sum must be 0 or greater than 0"
+        )
+    df["period"] = pd.to_datetime(df["period"], errors="coerce").dt.date.apply(
+        lambda x: f"{x}"
+    )
+    return df.to_dict(orient="records")

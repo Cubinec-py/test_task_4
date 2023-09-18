@@ -1,3 +1,4 @@
+from typing import Union
 from datetime import datetime, date
 from pydantic import BaseModel, validator
 
@@ -5,19 +6,9 @@ from fastapi import HTTPException
 
 
 class Plan(BaseModel):
-    period: str | None
-    sum: float | None = ""
-    category_plan: str | None = "видача/збір"
-
-
-class PlanDayError(BaseModel):
-    error: str = "No date found"
-    data: Plan
-
-
-class PlanSummError(BaseModel):
-    error: str = "Sum must be 0 or greater than 0"
-    data: Plan
+    period: Union[str, None]
+    sum: Union[float, None] = ""
+    category_plan: Union[str, None] = "видача/збір"
 
 
 class PlanExists(BaseModel):
@@ -47,11 +38,6 @@ class PlanFileError(BaseModel):
     message: str = "Only Excel files (xlsx) are allowed."
 
 
-class PlanCategoryError(BaseModel):
-    message: str = "Category not found"
-    data: Plan
-
-
 class PlanCreate(BaseModel):
     id: int
     period: date
@@ -61,39 +47,6 @@ class PlanCreate(BaseModel):
     class Config:
         orm_mode = True
         arbitrary_types_allowed = True
-
-
-class InsertDate(BaseModel):
-    date: str = "2022-01-01"
-
-    @validator("date")
-    def validate_date(cls, value):
-        try:
-            value = datetime.strptime(value, "%Y-%m-%d").date()
-        except ValueError:
-            raise HTTPException(
-                status_code=404,
-                detail="Invalid date format. Please use YYYY-MM-DD format.",
-            )
-        today = date.today()
-        if value > today:
-            raise HTTPException(
-                status_code=404, detail="Date must be not in the future"
-            )
-        return value
-
-
-class InsertYear(BaseModel):
-    year: int = 2022
-
-    @validator("year")
-    def validate_date(cls, value):
-        today = date.today().year
-        if value > today:
-            raise HTTPException(
-                status_code=404, detail="Year must be not in the future"
-            )
-        return value
 
 
 class PlanCreditPerformance(BaseModel):
@@ -137,3 +90,42 @@ class YearPerformance(BaseModel):
     class Config:
         orm_mode = True
         arbitrary_types_allowed = True
+
+
+class InsertDate(BaseModel):
+    date: Union[str, date]
+
+    @validator("date")
+    def validate_date(cls, value):
+        try:
+            value = datetime.strptime(value, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(
+                status_code=404,
+                detail="Invalid date format. Please use YYYY-MM-DD format.",
+            )
+        today = date.today()
+        if value > today:
+            raise HTTPException(
+                status_code=404, detail="Date must be not in the future"
+            )
+        return value
+
+
+class InsertYear(BaseModel):
+    year: int = 2022
+
+    @validator("year")
+    def validate_date(cls, value):
+        if value < 1000:
+            raise HTTPException(
+                status_code=404,
+                detail="Invalid year format. Please use YYYY format",
+            )
+        today = date.today().year
+        if value > today:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Year must be not in the future, now is {today}",
+            )
+        return value

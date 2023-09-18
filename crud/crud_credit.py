@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, extract, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from crud.base import CRUD
@@ -39,13 +39,34 @@ class CreditCRUD(CRUD):
         result = await self.session.execute(query)
         return result.scalar()
 
-    async def get_sum_all_by_date_period(
-        self, date_start: datetime.date, date_end: datetime.date
+    async def get_count_sum_all_by_year(
+        self,
+        year: int,
     ):
+        first_query = (
+            select(
+                func.round(func.coalesce(func.sum(self.model.body), 0), 2).label(
+                    "year_sum"
+                )
+            )
+            .where(extract("year", self.model.issuance_date) == year)
+            .cte()
+        )
         query = (
-            select(func.round(func.sum(self.model.body), 2))
-            .filter(self.model.issuance_date >= date_start)
-            .filter(self.model.issuance_date <= date_end)
+            select(
+                [
+                    first_query.c.year_sum,
+                    func.round(func.coalesce(func.sum(self.model.body), 0), 2).label(
+                        "monthly_sum"
+                    ),
+                    func.coalesce(func.count(self.model.id), 0),
+                ]
+            )
+            .join(first_query, true())
+            .where(extract("year", self.model.issuance_date) == year)
+            .group_by(
+                extract("month", self.model.issuance_date), first_query.c.year_sum
+            )
         )
         result = await self.session.execute(query)
-        return result.scalar()
+        return result.fetchall()

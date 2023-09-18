@@ -31,7 +31,7 @@ class PlanCRUD(CRUD):
         return result.scalars().all()
 
     async def get_all_by_year_period(self, insert_year: int):
-        query_1 = (
+        first_query = (
             select(
                 extract("month", self.model.period).label("month"),
                 self.model.category_id,
@@ -40,8 +40,8 @@ class PlanCRUD(CRUD):
             .filter(extract("year", self.model.period) == insert_year)
             .group_by(extract("month", self.model.period), self.model.category_id)
             .order_by(extract("month", self.model.period), self.model.category_id)
+            .cte()
         )
-        first_query = query_1.cte()
         query = select(
             first_query.c.month, func.group_concat(first_query.c.sum_1)
         ).group_by(first_query.c.month)
