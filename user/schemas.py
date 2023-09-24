@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from datetime import date
+
+from pydantic import BaseModel, ConfigDict
 
 
 class UserRead(BaseModel):
@@ -7,9 +8,7 @@ class UserRead(BaseModel):
     login: str
     registration_date: date
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 
 class UserCreate(BaseModel):
@@ -17,6 +16,4 @@ class UserCreate(BaseModel):
     login: str
     registration_date: date
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)

@@ -1,27 +1,22 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Union
 
+from crud import CRUD, CreditCRUD, DictionaryCRUD, PaymentCRUD, PlanCRUD
 from dictionary.models import Dictionary
 from management.csv_read import read_xlsx
-from crud.crud_plan import PlanCRUD
-from crud.base import CRUD
-from crud.crud_credit import CreditCRUD
-from crud.crud_payment import PaymentCRUD
-from crud.crud_dictionary import DictionaryCRUD
-from plan.schemas import (
-    PlanExists,
-    PlanRead,
-    PlanFileError,
-    PlanSuccess,
-    InsertDate,
-    PlanCreditPerformance,
-    PlanPaymentPerformance,
-    YearPerformance,
-    InsertYear,
-)
 from plan.models import Plan
-from settings.database import get_async_session
+from plan.schemas import (
+    InsertDate,
+    InsertYear,
+    PlanCreditPerformance,
+    PlanExists,
+    PlanFileError,
+    PlanPaymentPerformance,
+    PlanRead,
+    PlanSuccess,
+    YearPerformance,
+)
+from settings import get_async_session
 
 router = APIRouter(
     tags=["Plans"],
@@ -33,13 +28,13 @@ router = APIRouter(
     description="Method for uploading plans for a new month",
     responses={
         200: {"model": PlanSuccess},
-        404: {"model": Union[PlanExists, PlanFileError]},
+        404: {"model": PlanExists | PlanFileError},
     },
 )
 async def plans_insert(
     file: UploadFile = File(..., description="Only Excel files are allowed."),
     session: AsyncSession = Depends(get_async_session),
-) -> Union[dict, PlanExists, PlanRead, PlanFileError, PlanSuccess]:
+) -> dict | (PlanExists | (PlanRead | (PlanFileError | PlanSuccess))):
     if not file.filename.endswith(".xlsx" or ".xls" or ".xlsm" or ".xml"):
         raise HTTPException(status_code=404, detail=PlanFileError().dict())
     all_data = await read_xlsx(file)
@@ -61,15 +56,13 @@ async def plans_insert(
     "/plans_performance/",
     description="Method for obtaining information about the execution of plans for a certain date",
     responses={
-        200: {
-            "model": list[Union[PlanPaymentPerformance, PlanCreditPerformance, None]]
-        },
+        200: {"model": list[PlanPaymentPerformance | (PlanCreditPerformance | None)]},
     },
 )
 async def plans_performance(
     insert_date: InsertDate = Depends(),
     session: AsyncSession = Depends(get_async_session),
-) -> list[Union[PlanPaymentPerformance, PlanCreditPerformance, None]]:
+) -> list[PlanPaymentPerformance | (PlanCreditPerformance | None)]:
     plans = await PlanCRUD(session).get_plans_by_date(insert_date.date)
     result = []
     for data in plans:
@@ -82,14 +75,14 @@ async def plans_performance(
             )
             data.credits_sum = round(sum([credit.body for credit in credits]), 2)
             data.percent = round(data.credits_sum * 100 / data.sum, 2)
-            result.append(PlanCreditPerformance.from_orm(data))
+            result.append(PlanCreditPerformance.model_validate(data))
         elif data.category_name == "збір":
             payments = await PaymentCRUD(session).get_all_by_date_period(
                 data.period, insert_date.date
             )
             data.payments_sum = round(sum([credit.sum for credit in payments]), 2)
             data.percent = round(data.payments_sum * 100 / data.sum, 2)
-            result.append(PlanPaymentPerformance.from_orm(data))
+            result.append(PlanPaymentPerformance.model_validate(data))
     return result
 
 
@@ -97,13 +90,13 @@ async def plans_performance(
     "/year_performance/",
     description="Method for obtaining consolidated information for a given year. Grouping by month.",
     responses={
-        200: {"model": list[Union[YearPerformance, None]]},
+        200: {"model": list[YearPerformance | None]},
     },
 )
 async def get_year_performance(
     insert_year: InsertYear = Depends(),
     session: AsyncSession = Depends(get_async_session),
-) -> list[Union[YearPerformance, None]]:
+) -> list[YearPerformance | None]:
     year = insert_year.year
     plans = await PlanCRUD(session).get_all_by_year_period(year)
     result = []

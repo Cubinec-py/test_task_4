@@ -1,19 +1,15 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class DictionaryRead(BaseModel):
     id: int
     name: str
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 
 class DictionaryCreate(BaseModel):
     id: int
     name: str
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)

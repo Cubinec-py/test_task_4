@@ -1,13 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from settings.database import Settings
-
-from management import user_add, dictionary_add, plan_add, payment_add, credit_add
-
 from credit.router import router as credit_router
+from management import credit_add, dictionary_add, payment_add, plan_add, user_add
 from plan.router import router as plan_router
-
+from settings import Settings, async_session_maker
 
 app = FastAPI(
     title="Test task API",
@@ -27,11 +24,13 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def init_db_data():
-    await user_add()
-    await dictionary_add()
-    await credit_add()
-    await plan_add()
-    await payment_add()
+    async with async_session_maker() as session:
+        await user_add(session)
+        await dictionary_add(session)
+        await credit_add(session)
+        await plan_add(session)
+        await payment_add(session)
+        await session.close()
 
 
 API_PREFIX = "/api/v1"

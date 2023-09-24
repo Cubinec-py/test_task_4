@@ -1,6 +1,6 @@
-from typing import Any, Dict, List
+from typing import Any
 
-from sqlalchemy import select, insert
+from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from settings.database import async_session_maker
@@ -18,12 +18,6 @@ class CRUD:
         return result.scalars().first()
 
     async def data_in_db(self):
-        if not self.session:
-            async with self.async_session_maker() as session:
-                query = select(self.model.__table__.columns)
-                result = await session.execute(query)
-                data = result.fetchone()
-                return bool(data)
         query = select(self.model.__table__.columns)
         result = await self.session.execute(query)
         data = result.fetchone()
@@ -35,15 +29,7 @@ class CRUD:
         await self.session.commit()
         await self.session.close()
 
-    async def create_from_csv(self, obj_in: List[Dict[str, Any]]):
-        if not self.session:
-            async with self.async_session_maker() as session:
-                insert_stmt = insert(self.model).values(obj_in)
-                await session.execute(insert_stmt)
-                await session.commit()
-                await session.close()
-            return True
+    async def create_from_csv(self, obj_in: list[dict[str, Any]]):
         insert_stmt = insert(self.model).values(obj_in)
         await self.session.execute(insert_stmt)
         await self.session.commit()
-        await self.session.close()

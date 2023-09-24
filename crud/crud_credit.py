@@ -1,10 +1,10 @@
 import datetime
 
-from sqlalchemy import select, func, extract, true
+from sqlalchemy import extract, func, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from crud.base import CRUD
 from credit.models import Credit
+from crud.base import CRUD
 
 
 class CreditCRUD(CRUD):
@@ -54,13 +54,11 @@ class CreditCRUD(CRUD):
         )
         query = (
             select(
-                [
-                    first_query.c.year_sum,
-                    func.round(func.coalesce(func.sum(self.model.body), 0), 2).label(
-                        "monthly_sum"
-                    ),
-                    func.coalesce(func.count(self.model.id), 0),
-                ]
+                first_query.c.year_sum,
+                func.round(func.coalesce(func.sum(self.model.body), 0), 2).label(
+                    "monthly_sum"
+                ),
+                func.coalesce(func.count(self.model.id), 0),
             )
             .join(first_query, true())
             .where(extract("year", self.model.issuance_date) == year)

@@ -1,20 +1,21 @@
 """Init project models: credit, dictionary, payment, plan, user
 
-Revision ID: 39999f51aaea
-Revises: 
-Create Date: 2023-09-13 01:26:07.038790
+Revision ID: 90a417fdf674
+Revises:
+Create Date: 2023-09-24 19:33:55.495999
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "39999f51aaea"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+revision: str = "90a417fdf674"
+down_revision: str | None = None
+branch_labels: str | (Sequence[str] | None) = None
+depends_on: str | (Sequence[str] | None) = None
 
 
 def upgrade() -> None:
@@ -35,9 +36,9 @@ def upgrade() -> None:
     op.create_table(
         "credit",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=True),
+        sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("issuance_date", sa.Date(), nullable=False),
-        sa.Column("return_date", sa.Date(), nullable=True),
+        sa.Column("return_date", sa.Date(), nullable=False),
         sa.Column("actual_return_date", sa.Date(), nullable=True),
         sa.Column("body", sa.Float(), nullable=False),
         sa.Column("percent", sa.Float(), nullable=True),
@@ -49,7 +50,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("period", sa.Date(), nullable=False),
         sa.Column("sum", sa.Float(), nullable=False),
-        sa.Column("category_id", sa.Integer(), nullable=True),
+        sa.Column("category_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(["category_id"], ["dictionary.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -58,8 +59,8 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("sum", sa.Float(), nullable=False),
         sa.Column("payment_date", sa.Date(), nullable=False),
-        sa.Column("credit_id", sa.Integer(), nullable=True),
-        sa.Column("type_id", sa.Integer(), nullable=True),
+        sa.Column("credit_id", sa.Integer(), nullable=False),
+        sa.Column("type_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(["credit_id"], ["credit.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["type_id"], ["dictionary.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),

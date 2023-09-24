@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from datetime import date
+
+from pydantic import BaseModel, ConfigDict
 
 
 class PaymentRead(BaseModel):
@@ -9,9 +10,7 @@ class PaymentRead(BaseModel):
     credit_id: int
     type_id: int
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 
 class PaymentCreate(BaseModel):
@@ -21,6 +20,4 @@ class PaymentCreate(BaseModel):
     credit_id: int
     type_id: int
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)

@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import select, extract, func
+from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from crud.base import CRUD
@@ -24,7 +24,7 @@ class PlanCRUD(CRUD):
             .where(self.model.period >= insert_date.replace(day=1))
             .order_by(self.model.period.desc())
             .limit(1)
-            .as_scalar()
+            .scalar_subquery()
         )
         query = select(self.model).where(self.model.period == subquery)
         result = await self.session.execute(query)

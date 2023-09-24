@@ -1,23 +1,20 @@
-from typing import Union
-from datetime import datetime, date
-from pydantic import BaseModel, validator
+from datetime import date, datetime
 
 from fastapi import HTTPException
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class Plan(BaseModel):
-    period: Union[str, None]
-    sum: Union[float, None] = ""
-    category_plan: Union[str, None] = "видача/збір"
+    period: str | None
+    sum: float | None = ""
+    category_plan: str | None = "видача/збір"
 
 
 class PlanExists(BaseModel):
     error: str = "Plan already exists"
     data: Plan
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 
 class PlanRead(BaseModel):
@@ -25,9 +22,7 @@ class PlanRead(BaseModel):
     sum: float
     category_id: int
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 
 class PlanSuccess(BaseModel):
@@ -44,9 +39,7 @@ class PlanCreate(BaseModel):
     sum: float
     category_id: int
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 
 class PlanCreditPerformance(BaseModel):
@@ -56,9 +49,7 @@ class PlanCreditPerformance(BaseModel):
     credits_sum: float
     percent: float
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 
 class PlanPaymentPerformance(BaseModel):
@@ -68,9 +59,7 @@ class PlanPaymentPerformance(BaseModel):
     payments_sum: float
     percent: float
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 
 class YearPerformance(BaseModel):
@@ -87,27 +76,25 @@ class YearPerformance(BaseModel):
     percent_month_issuance_of_year_issuance: float
     percent_month_payments_of_year_payments: float
 
-    class Config:
-        orm_mode = True
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 
 class InsertDate(BaseModel):
-    date: Union[str, date]
+    date: str | date
 
-    @validator("date")
+    @field_validator("date")
     def validate_date(cls, value):
         try:
             value = datetime.strptime(value, "%Y-%m-%d").date()
         except ValueError:
             raise HTTPException(
-                status_code=404,
+                status_code=422,
                 detail="Invalid date format. Please use YYYY-MM-DD format.",
             )
         today = date.today()
         if value > today:
             raise HTTPException(
-                status_code=404, detail="Date must be not in the future"
+                status_code=422, detail="Date must be not in the future"
             )
         return value
 
@@ -115,7 +102,7 @@ class InsertDate(BaseModel):
 class InsertYear(BaseModel):
     year: int = 2022
 
-    @validator("year")
+    @field_validator("year")
     def validate_date(cls, value):
         if value < 1000:
             raise HTTPException(

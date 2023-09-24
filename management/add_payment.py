@@ -1,11 +1,13 @@
-from payment.models import Payment
-from management.csv_read import read_csv
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from crud.base import CRUD
+from management.csv_read import read_csv
+from payment.models import Payment
 
 
-async def payment_add():
-    data = await CRUD(Payment).data_in_db()
+async def payment_add(session: AsyncSession):
+    data = await CRUD(Payment, session).data_in_db()
 
     if not bool(data):
         data_to_insert = read_csv("csv_files/payments.csv")
-        await CRUD(Payment).create_from_csv(data_to_insert)
+        await CRUD(Payment, session).create_from_csv(data_to_insert)

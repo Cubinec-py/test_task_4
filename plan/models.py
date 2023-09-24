@@ -1,4 +1,7 @@
-from sqlalchemy import Column, Integer, Float, Date, ForeignKey
+from datetime import date
+
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 
 from settings.database import Base
 
@@ -6,7 +9,9 @@ from settings.database import Base
 class Plan(Base):
     __tablename__ = "plan"
 
-    id = Column(Integer, primary_key=True)
-    period = Column(Date, nullable=False)
-    sum = Column(Float, nullable=False)
-    category_id = Column(Integer, ForeignKey("dictionary.id", ondelete="CASCADE"))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    period: Mapped[date] = mapped_column(nullable=False)
+    sum: Mapped[float] = mapped_column(nullable=False)
+    category_id: Mapped[int] = mapped_column(
+        ForeignKey("dictionary.id", ondelete="CASCADE")
+    )

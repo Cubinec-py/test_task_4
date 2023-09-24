@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "test task 4"
+version = "0.1.0"
+description = ""
+authors = ["Cubinec-py <san4os2012@gmail.com>"]
+readme = "README.md"
+
+[tool.pytest.ini_options]
+pythonpath = ['.']
+asyncio_mode = 'auto'
+
+[tool.ruff]
+target-version = "py311"
+select = ["E", "F", "W", "I", "UP", "PL"]
+line-length = 120
+exclude = ['tests.py', '.venv', '.idea', './csv_files/*', '.mypy_cache', './alembic/env.py']
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+fastapi = {extras = ["all"], version = "^0.103.1"}
+alembic = "^1.12.0"
+aiomysql = "^0.2.0"
+pandas = "^2.1.1"
+openpyxl = "^3.1.2"
+ruff = "^0.0.291"
+uvicorn = "^0.23.2"
+pydantic-settings = "^2.0.3"
+greenlet = "^2.0.2"
+black = "^23.9.1"
+pytest = "^7.4.2"
+pytest-asyncio = "^0.21.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

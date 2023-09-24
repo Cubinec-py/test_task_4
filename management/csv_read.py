@@ -3,12 +3,11 @@ import io
 import re
 
 import pandas as pd
-
 from fastapi import HTTPException
 
 
 def read_csv(file_route):
-    with open(f"{file_route}", "r") as file:
+    with open(f"{file_route}") as file:
         csv_reader = csv.reader(file, delimiter="\t")
         header = next(csv_reader)
         date_reg = r"^\d{2}\.\d{2}\.\d{4}$"
@@ -30,7 +29,11 @@ async def read_xlsx(file):
     df = pd.read_excel(io.BytesIO(data), engine="openpyxl")
     if df.empty:
         raise HTTPException(status_code=400, detail="Error: no data in file")
-    missing_columns = [column for column in ("period", "sum", "category_plan") if column not in df.columns]
+    missing_columns = [
+        column
+        for column in ("period", "sum", "category_plan")
+        if column not in df.columns
+    ]
     if missing_columns:
         missing_columns_str = ", ".join(missing_columns)
         raise HTTPException(

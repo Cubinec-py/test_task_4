@@ -1,4 +1,7 @@
-from sqlalchemy import Column, Integer, Float, Date, ForeignKey
+from datetime import date
+
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 
 from settings.database import Base
 
@@ -6,8 +9,10 @@ from settings.database import Base
 class Payment(Base):
     __tablename__ = "payment"
 
-    id = Column(Integer, primary_key=True)
-    sum = Column(Float, nullable=False)
-    payment_date = Column(Date, nullable=False)
-    credit_id = Column(Integer, ForeignKey("credit.id", ondelete="CASCADE"))
-    type_id = Column(Integer, ForeignKey("dictionary.id", ondelete="CASCADE"))
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sum: Mapped[float] = mapped_column(nullable=False)
+    payment_date: Mapped[date] = mapped_column(nullable=False)
+    credit_id: Mapped[int] = mapped_column(ForeignKey("credit.id", ondelete="CASCADE"))
+    type_id: Mapped[int] = mapped_column(
+        ForeignKey("dictionary.id", ondelete="CASCADE")
+    )

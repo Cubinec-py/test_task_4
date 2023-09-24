@@ -1,4 +1,7 @@
-from sqlalchemy import Column, Integer, Float, Date, ForeignKey
+from datetime import date
+
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column
 
 from settings.database import Base
 
@@ -6,10 +9,10 @@ from settings.database import Base
 class Credit(Base):
     __tablename__ = "credit"
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    issuance_date = Column(Date, nullable=False)
-    return_date = Column(Date, nullable=True)
-    actual_return_date = Column(Date, nullable=True)
-    body = Column(Float, nullable=False)
-    percent = Column(Float, nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    issuance_date: Mapped[date] = mapped_column(nullable=False)
+    return_date: Mapped[date] = mapped_column(nullable=False)
+    actual_return_date: Mapped[date] = mapped_column(nullable=True)
+    body: Mapped[float] = mapped_column(nullable=False)
+    percent: Mapped[float] = mapped_column(nullable=True)
